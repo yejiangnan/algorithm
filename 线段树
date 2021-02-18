@@ -1,0 +1,93 @@
+#include <cstdio>
+#include <iostream>
+#include <algorithm>
+#include <vector>
+#include <string>
+#include <cstring>
+#include <map>
+#include <stack>
+#include <set>
+#include <map>
+#include <queue>
+#include <cmath>
+#include <sstream>
+#include <list>
+#include <unordered_map>
+using namespace std;
+typedef long long ll;
+
+int n, m;
+struct node {
+	ll l, r, sum, lazy;
+	node() { l = r = sum = lazy = 0; }
+};
+vector<ll> arr;
+vector<node> tree;
+
+void build(int idx, int l, int r) {
+	tree[idx].l = l; tree[idx].r = r;
+	if (l == r) {
+		tree[idx].sum = arr[l];
+	}
+	else {
+		int mid = (l + r) >> 1;
+		build(idx << 1, l, mid);
+		build(idx << 1 | 1, mid + 1, r);
+		tree[idx].sum += (tree[idx << 1].sum + tree[idx << 1 | 1].sum);
+	}
+}
+
+void pushdown(int idx) {
+	tree[idx << 1].lazy += tree[idx].lazy;
+	tree[idx << 1].sum += (tree[idx << 1].r - tree[idx << 1].l + 1) * tree[idx].lazy;
+	tree[idx << 1 | 1].lazy += tree[idx].lazy;
+	tree[idx << 1 | 1].sum += (tree[idx << 1 | 1].r - tree[idx << 1 | 1].l + 1) * tree[idx].lazy;
+	tree[idx].lazy = 0;
+}
+
+void update(int idx, int l, int r, int v) {
+	if (tree[idx].r < l || tree[idx].l > r)return;
+	if (tree[idx].l >= l && tree[idx].r <= r) {
+		tree[idx].sum += (tree[idx].r - tree[idx].l + 1) * v;
+		tree[idx].lazy += v;
+	}
+	else {
+		if (tree[idx].lazy != 0) {
+			pushdown(idx);
+		}
+		update(idx << 1, l, r, v);
+		update(idx << 1 | 1, l, r, v);
+		tree[idx].sum = tree[idx << 1].sum + tree[idx << 1 | 1].sum;
+	}
+}
+
+ll query(int idx, int l, int r) {
+	if (tree[idx].r < l || tree[idx].l > r)return 0;
+	if (tree[idx].l >= l && tree[idx].r <= r)return tree[idx].sum;
+	if (tree[idx].lazy != 0)pushdown(idx);
+	return query(idx << 1, l, r) + query(idx << 1 | 1, l, r);
+}
+
+
+int main() {
+	ios::sync_with_stdio(false);
+	cin >> n >> m;
+	arr = vector<ll>(n + 1);
+	tree = vector<node>(((n + 1) * 5) + 5);
+	for (int i = 1; i <= n; i++)cin >> arr[i];
+	build(1, 1, n);
+	for (int i = 0; i < m; i++) {
+		int op;
+		cin >> op;
+		if (op == 1) {
+			ll x, y, k;
+			cin >> x >> y >> k;
+			update(1, x, y, k);
+		}
+		else if (op == 2) {
+			ll x, y;
+			cin >> x >> y;
+			cout << query(1, x, y) << endl;
+		}
+	}
+}
